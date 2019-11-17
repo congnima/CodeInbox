@@ -57,6 +57,10 @@ int main(int argc, char** argv) {
 	inet_pton( AF_INET, ip, &address.sin_addr );
 	address.sin_port = htons( port );
 
+	// sys/socket.h
+	/* Give the socket FD the local address ADDR (which is LEN bytes long).  */
+	//extern int bind (int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len)
+     //__THROW;
 	int ret = bind( sock, (struct sockaddr*)&address, sizeof(address) );
 	assert( ret != -1 );
 
