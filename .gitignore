@@ -1,4 +1,6 @@
 a.out
+*.sw*
 iterator
 tcpserver
 tcpclient
+epoll
