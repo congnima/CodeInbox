@@ -7,21 +7,82 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <argp.h>
 
-static bool exit = false;
+const char *argp_program_version = "tcpserver 1.0";
+const char *argp_program_bug_address = "luogary6@gmail.com";
+static char doc[] = "A Simple TCP Server";
+static char args_doc[] = "ARG1 ARG2";
+static struct argp_option options[] = {
+    {"host",  'h', "host",      0,  "listen host" },
+    {"port",  'p', "port",      0,  "listen port" },
+    { 0 }
+};
+struct arguments
+{
+    char *args[32];                /* arg1 & arg2 */
+    char *host;
+    int port;
+};
 
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+    /* Get the input argument from argp_parse, which we
+     *      know is a pointer to our arguments structure. */
+    struct arguments *arguments = (struct arguments*)(state->input);
+
+    switch (key)
+    {
+        case 'h':
+            arguments->host = arg;
+            break;
+        case 'p':
+            arguments->port = arg ? atoi(arg) : 0;
+            break;
+
+        //case ARGP_KEY_ARG:
+            //if (state->arg_num >= 2)
+                //[> Too many arguments. <]
+                //argp_usage (state);
+
+            //arguments->args[state->arg_num] = arg;
+
+            //break;
+
+        //case ARGP_KEY_END:
+            //if (state->arg_num < 2)
+                //[> Not enough arguments. <]
+                //argp_usage (state);
+            //break;
+
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+static struct argp argp = { options, parse_opt, args_doc, doc };
+
+static bool stop = false;
 static void handle_term( int sig )
 {
 	printf("handle_term: bye~\n");
-	exit = true;
+	stop = true;
 }
 
 int main(int argc, char** argv) {
+
+    struct arguments arguments;
+    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+    printf("listen on - host:%s, port:%d\n", arguments.host, arguments.port);
+
 	signal( SIGTERM, handle_term );
 
-	char* ip = (char*)"127.0.0.1";
-	int port = 6000;
+
+	//char* ip = (char*)"127.0.0.1";
+	//int port = 6000;
 	int backlog = 5;
 
 	// sys/socket.h
@@ -55,8 +116,8 @@ int main(int argc, char** argv) {
 	   interface type AF in buffer starting at BUF.  */
 	//extern int inet_pton (int __af, const char *__restrict __cp,
 				  //void *__restrict __buf) __THROW;
-	inet_pton( AF_INET, ip, &address.sin_addr );
-	address.sin_port = htons( port );
+	inet_pton( AF_INET, arguments.host, &address.sin_addr );
+	address.sin_port = htons( arguments.port );
 
 	// sys/socket.h
 	/* Give the socket FD the local address ADDR (which is LEN bytes long).  */
@@ -68,7 +129,7 @@ int main(int argc, char** argv) {
 	ret = listen( sock, backlog );
 	assert ( ret != -1 );
 
-	while ( !exit ) {
+	while ( !stop ) {
 		//sleep(1);
 		struct sockaddr_in client;
 		socklen_t client_addrlength = sizeof( client );
